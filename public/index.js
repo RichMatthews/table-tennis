@@ -24832,7 +24832,7 @@ var App = function (_React$Component) {
       var Slack = __webpack_require__(347);
       var slack = new Slack('https://hooks.slack.com/services/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');
       slack.send({
-        channel: "#rich-test-public",
+        channel: "#consumer-tt-rankings",
         username: "table-tennis-bot",
         icon_emoji: ":table_tennis_paddle_and_ball:",
         text: '<@' + winner.name + '> ' + winner.score + '-' + loser.score + ' <@' + loser.name + '>'
