@@ -128,9 +128,9 @@ getPlayer(p) {
  postToSlack(winner, loser){
    let slackName = this.state.slackNameValue;
    let Slack = require('browser-node-slack');
-   let slack = new Slack(config.SECRET_KEY);
+   let slack = new Slack('https://hooks.slack.com/services/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');
    slack.send({
-     channel: "#consumer-tt-rankings",
+     channel: "#rich-test-public",
      username: "table-tennis-bot",
      icon_emoji: ":table_tennis_paddle_and_ball:",
      text: `<@${winner.name}> ${winner.score}-${loser.score} <@${loser.name}>`
