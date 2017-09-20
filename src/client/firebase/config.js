@@ -10,8 +10,3 @@ var config = {
 export const firebaseInit = firebase.initializeApp(config);
 export const rootRef = firebase.database().ref();
 export const messaging = firebase.messaging();
-
-
-// this.state.players.sort(function(a, b) {
-//     return (a.rank) - (b.rank);
-// });
