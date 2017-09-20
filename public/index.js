@@ -24830,7 +24830,7 @@ var App = function (_React$Component) {
     value: function postToSlack(winner, loser) {
       var slackName = this.state.slackNameValue;
       var Slack = __webpack_require__(347);
-      var slack = new Slack('https://hooks.slack.com/services/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');
+      var slack = new Slack(config.SECRET_KEY);
       slack.send({
         channel: "#consumer-tt-rankings",
         username: "table-tennis-bot",
