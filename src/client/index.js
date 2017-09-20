@@ -106,7 +106,6 @@ getPlayer(p) {
      playerOne.score = player1.score;
      playerTwo.score = player2.score;
      let result = this.workOutWinner(playerOne, playerTwo);
-     console.log(result, 'result');
      this.postToSlack(result.winner, result.loser);
      this.postMatch(player1, player2);
      this.incrementStats(result.winner, result.loser);
@@ -177,7 +176,6 @@ formatDate(date) {
 
 
  render() {
-   console.log(this.formatDate(new Date()));
    const { players, matches } = this.state;
     return (
         <div className="container">

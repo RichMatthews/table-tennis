@@ -24762,7 +24762,6 @@ var App = function (_React$Component) {
         playerOne.score = player1.score;
         playerTwo.score = player2.score;
         var result = _this.workOutWinner(playerOne, playerTwo);
-        console.log(result, 'result');
         _this.postToSlack(result.winner, result.loser);
         _this.postMatch(player1, player2);
         _this.incrementStats(result.winner, result.loser);
@@ -24877,7 +24876,6 @@ var App = function (_React$Component) {
     value: function render() {
       var _this2 = this;
 
-      console.log(this.formatDate(new Date()));
       var _state = this.state,
           players = _state.players,
           matches = _state.matches;
