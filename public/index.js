@@ -24691,8 +24691,6 @@ __webpack_require__(345);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -24708,8 +24706,8 @@ var App = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
     _this.componentDidMount = function () {
-      _this.pullFromDB('players');
-      _this.pullFromDB('matches');
+      _this.pullPlayers();
+      _this.pullMatches();
     };
 
     _this.pullFromFirebase = function (query) {
@@ -24718,13 +24716,26 @@ var App = function (_React$Component) {
       });
     };
 
-    _this.pullFromDB = function (routeName) {
-      _this.pullFromFirebase('/' + routeName + '/' + routeName).then(function (data) {
+    _this.pullPlayers = function () {
+      _this.pullFromFirebase('playersTest/playersTest').then(function (data) {
         try {
           var pulledContent = Object.keys(data.val()).map(function (key) {
             return data.val()[key];
           });
-          _this.setState(_defineProperty({}, routeName, pulledContent));
+          _this.setState({ players: pulledContent });
+        } catch (err) {
+          console.log('no data');
+        }
+      });
+    };
+
+    _this.pullMatches = function () {
+      _this.pullFromFirebase('matchesTest/matchesTest').then(function (data) {
+        try {
+          var pulledContent = Object.keys(data.val()).map(function (key) {
+            return data.val()[key];
+          });
+          _this.setState({ matches: pulledContent });
         } catch (err) {
           console.log('no data');
         }
@@ -24876,6 +24887,7 @@ var App = function (_React$Component) {
     value: function render() {
       var _this2 = this;
 
+      console.log(this.state.matches, 'm');
       var _state = this.state,
           players = _state.players,
           matches = _state.matches;
@@ -49594,8 +49606,21 @@ var Matches = function (_React$Component) {
   }
 
   _createClass(Matches, [{
+    key: 'playerSearch',
+    value: function playerSearch(player) {
+      var filteredArray = [];
+      this.props.matches.reverse().map(function (match) {
+        if (match.playerOne.name.includes(player) || match.playerTwo.name.includes(player)) {
+          filteredArray.push(match);
+        }
+      });
+      console.log(filteredArray, 'fa');
+    }
+  }, {
     key: 'render',
     value: function render() {
+      var _this2 = this;
+
       return _react2.default.createElement(
         'div',
         null,
@@ -49603,6 +49628,14 @@ var Matches = function (_React$Component) {
           'h1',
           null,
           'Recent Matches'
+        ),
+        _react2.default.createElement('input', { type: 'text', placeholder: 'search for player', ref: 'player' }),
+        _react2.default.createElement(
+          'button',
+          { onClick: function onClick() {
+              return _this2.playerSearch(_this2.refs.player.value);
+            } },
+          'Search'
         ),
         this.props.matches.map(function (match, index) {
           return _react2.default.createElement(

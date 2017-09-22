@@ -19,8 +19,8 @@ class App extends React.Component {
  }
 
  componentDidMount = () => {
-   this.pullFromDB('players');
-   this.pullFromDB('matches');
+   this.pullPlayers();
+   this.pullMatches();
  }
 
  pullFromFirebase = (query) => {
@@ -29,13 +29,27 @@ class App extends React.Component {
    });
  }
 
- pullFromDB = (routeName) => {
-   this.pullFromFirebase(`/${routeName}/${routeName}`).then((data) => {
+ pullPlayers = () => {
+   this.pullFromFirebase('playersTest/playersTest').then((data) => {
      try {
        let pulledContent = Object.keys(data.val()).map(function(key) {
          return data.val()[key];
        })
-       this.setState({[routeName]: pulledContent});
+       this.setState({players: pulledContent});
+     }
+     catch(err){
+       console.log('no data');
+     }
+  })
+ }
+
+ pullMatches = () => {
+   this.pullFromFirebase('matchesTest/matchesTest').then((data) => {
+     try {
+       let pulledContent = Object.keys(data.val()).map(function(key) {
+         return data.val()[key];
+       })
+       this.setState({matches: pulledContent});
      }
      catch(err){
        console.log('no data');
@@ -174,8 +188,8 @@ formatDate(date) {
   return day + ' ' + monthNames[monthIndex] + ' ' + year;
 }
 
-
  render() {
+   console.log(this.state.matches, 'm');
    const { players, matches } = this.state;
     return (
         <div className="container">
