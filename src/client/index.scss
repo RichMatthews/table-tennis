@@ -35,6 +35,11 @@ input:focus::-webkit-input-placeholder {
   align-items: center;
 }
 
+.recentMatches {
+  width: 600px;
+  margin: auto;
+}
+
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;

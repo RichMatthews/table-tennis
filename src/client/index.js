@@ -213,7 +213,7 @@ formatDate(date) {
               players={players}
             />
           </div>
-          <div className="matches">
+          <div className="recentMatches">
             <Matches
               matches={matches}
             />

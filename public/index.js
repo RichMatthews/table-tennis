@@ -24831,7 +24831,7 @@ var App = function (_React$Component) {
       var Slack = __webpack_require__(347);
       var slack = new Slack('https://hooks.slack.com/services/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');
       slack.send({
-        channel: "#rich-test-public",
+        channel: "#consumer-tt-rankings",
         username: "table-tennis-bot",
         icon_emoji: ":table_tennis_paddle_and_ball:",
         text: '<@' + winner.name + '> ' + winner.score + '-' + loser.score + ' <@' + loser.name + '>'
@@ -24942,7 +24942,7 @@ var App = function (_React$Component) {
         ),
         _react2.default.createElement(
           'div',
-          { className: 'matches' },
+          { className: 'recentMatches' },
           _react2.default.createElement(_Matches2.default, {
             matches: matches
           })
@@ -49576,6 +49576,8 @@ var _react = __webpack_require__(63);
 
 var _react2 = _interopRequireDefault(_react);
 
+__webpack_require__(349);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -49604,36 +49606,41 @@ var Matches = function (_React$Component) {
           null,
           'Recent Matches'
         ),
-        this.props.matches.map(function (match, index) {
-          return _react2.default.createElement(
-            'div',
-            { key: index },
-            _react2.default.createElement(
-              'span',
-              null,
-              match.playerOne.name,
+        _react2.default.createElement(
+          'div',
+          { className: 'matches' },
+          this.props.matches.map(function (match, index) {
+            return _react2.default.createElement(
+              'div',
+              { key: index, className: 'match' },
+              _react2.default.createElement(
+                'span',
+                { className: 'playerName' },
+                match.playerOne.name
+              ),
+              _react2.default.createElement(
+                'span',
+                { className: 'playerScore' },
+                match.playerOne.score,
+                ' '
+              ),
+              _react2.default.createElement(
+                'span',
+                { className: 'playerScore' },
+                ' ',
+                match.playerTwo.score,
+                ' '
+              ),
               ' ',
-              match.playerOne.score,
-              ' '
-            ),
-            ':',
-            _react2.default.createElement(
-              'span',
-              null,
-              ' ',
-              match.playerTwo.score,
-              ' ',
-              match.playerTwo.name
-            ),
-            _react2.default.createElement(
-              'span',
-              null,
-              ' ',
-              match.date,
-              ' '
-            )
-          );
-        })
+              _react2.default.createElement(
+                'span',
+                { className: 'playerName' },
+                ' ',
+                match.playerTwo.name
+              )
+            );
+          })
+        )
       );
     }
   }]);
@@ -49950,7 +49957,7 @@ exports = module.exports = __webpack_require__(166)(undefined);
 
 
 // module
-exports.push([module.i, ".container {\n  text-align: center;\n  font-family: monospace; }\n\n.heading {\n  background-color: black;\n  color: orange; }\n\n.player {\n  padding: 5px;\n  font-size: 20px; }\n\ninput::-webkit-input-placeholder {\n  font-size: 12px;\n  color: #C7C7CD; }\n\ninput:focus::-webkit-input-placeholder {\n  color: transparent; }\n\n.score {\n  padding: 5px;\n  width: 50px;\n  font-size: 20px; }\n\n.table {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center; }\n\ninput[type=number]::-webkit-inner-spin-button,\ninput[type=number]::-webkit-outer-spin-button {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  margin: 0; }\n", ""]);
+exports.push([module.i, ".container {\n  text-align: center;\n  font-family: monospace; }\n\n.heading {\n  background-color: black;\n  color: orange; }\n\n.player {\n  padding: 5px;\n  font-size: 20px; }\n\ninput::-webkit-input-placeholder {\n  font-size: 12px;\n  color: #C7C7CD; }\n\ninput:focus::-webkit-input-placeholder {\n  color: transparent; }\n\n.score {\n  padding: 5px;\n  width: 50px;\n  font-size: 20px; }\n\n.table {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center; }\n\n.recentMatches {\n  width: 600px;\n  margin: auto; }\n\ninput[type=number]::-webkit-inner-spin-button,\ninput[type=number]::-webkit-outer-spin-button {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  margin: 0; }\n", ""]);
 
 // exports
 
@@ -50532,6 +50539,51 @@ function b64_enc (data) {
 //UMD FOOTER START
 }));
 //UMD FOOTER END
+
+
+/***/ }),
+/* 349 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(350);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(167)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
+			var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 350 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(166)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".matches div {\n  display: flex;\n  text-align: center;\n  font-size: 15px; }\n\n.matches div .playerName {\n  width: 50%;\n  padding: 5px; }\n\n.matches div .playerScore {\n  width: 3%;\n  padding: 5px; }\n\n.matches span:first-child {\n  text-align: right;\n  padding: 5px; }\n\n.matches span:last-child {\n  text-align: left;\n  padding: 5px; }\n\n.playerScore {\n  background-color: orange;\n  margin-left: 3px;\n  margin-right: 3px; }\n\n.match {\n  padding: 5px; }\n", ""]);
+
+// exports
 
 
 /***/ })

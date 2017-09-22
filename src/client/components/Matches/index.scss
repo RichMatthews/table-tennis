@@ -1,0 +1,35 @@
+.matches div{
+  display:flex;
+  text-align:center;
+  font-size: 15px;
+}
+
+.matches div .playerName {
+  width: 50%;
+  padding: 5px;
+}
+
+.matches div .playerScore {
+  width: 3%;
+  padding: 5px;
+}
+
+.matches span:first-child {
+  text-align: right;
+  padding: 5px;
+}
+
+.matches span:last-child {
+  text-align: left;
+  padding: 5px;
+}
+
+.playerScore {
+  background-color: orange;
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.match {
+  padding: 5px;
+}
