@@ -14,7 +14,8 @@ class App extends React.Component {
    super(props);
    this.state = {
      players: [],
-     matches: []
+     matches: [],
+     showTable: true
    }
  }
 
@@ -159,6 +160,12 @@ postMatch(playerOne, playerTwo) {
   });
 }
 
+toggle() {
+  this.setState(prevState => ({
+    showTable: !prevState.showTable
+  }));
+}
+
 formatDate(date) {
   var monthNames = [
     "January", "February", "March",
@@ -208,16 +215,21 @@ formatDate(date) {
               )}>submit result
             </button>
           </div>
-          <div className="table">
+          {this.state.showTable ?
+            <div className="table">
+            <button className="toggleButton" onClick={() => this.toggle()}>Show Matches</button>
             <Table
-              players={players}
+            players={players}
             />
-          </div>
-          <div className="recentMatches">
+            </div>
+            :
+            <div className="recentMatches">
+            <button className="toggleButton" onClick={() => this.toggle()}>Show Table</button>
             <Matches
-              matches={matches}
+            matches={matches}
             />
-          </div>
+            </div>
+          }
         </div>
     );
   }
