@@ -10,8 +10,8 @@
 }
 
 .matches div .playerScore {
-  width: 3%;
-  padding: 5px;
+  width: 8%;
+  padding: 2px;
 }
 
 .matches span:first-child {
@@ -30,6 +30,41 @@
   margin-right: 3px;
 }
 
+.allMatches {
+  display: flex;
+  flex-direction: column;
+}
+
 .match {
-  padding: 5px;
+  border-bottom: 1px solid black;
+  overflow: hidden;
+  margin-bottom: -1px;
+}
+
+#toggle:checked ~ .expand {
+  height: 50px;
+}
+
+#toggle:checked ~ label::before {
+  content: "-";
+}
+
+#toggle {
+  display: none;
+  content: '';
+}
+
+#toggle::before {
+  content: '+'
+}
+
+.expand {
+  height: 0px;
+  transition: height 0.5s;
+  color: black;
+}
+
+.matchesContainer {
+  margin: auto;
+  width: 500px;
 }

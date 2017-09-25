@@ -14128,7 +14128,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(343);
+var	fixUrls = __webpack_require__(347);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -24679,15 +24679,19 @@ var _firebase2 = _interopRequireDefault(_firebase);
 
 var _config = __webpack_require__(339);
 
-var _Matches = __webpack_require__(340);
+var _browserNodeSlack = __webpack_require__(340);
+
+var _browserNodeSlack2 = _interopRequireDefault(_browserNodeSlack);
+
+var _Matches = __webpack_require__(342);
 
 var _Matches2 = _interopRequireDefault(_Matches);
 
-var _Table = __webpack_require__(344);
+var _Table = __webpack_require__(348);
 
 var _Table2 = _interopRequireDefault(_Table);
 
-__webpack_require__(347);
+__webpack_require__(351);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -24710,12 +24714,28 @@ var App = function (_React$Component) {
     _this.componentDidMount = function () {
       _this.pullFromDB('players');
       _this.pullFromDB('matches');
+      _this.pullMonths();
     };
 
     _this.pullFromFirebase = function (query) {
       return new Promise(function (resolve, reject) {
         _firebase2.default.database().ref(query).on('value', resolve);
       });
+    };
+
+    _this.pullMonths = function () {
+      try {
+        var query = _firebase2.default.database().ref('matches/' + 'bymonth/').orderByKey();
+        query.once("value").then(function (snapshot) {
+          snapshot.forEach(function (childSnapshot) {
+            var key = childSnapshot.key;
+            var childData = childSnapshot.val();
+            _this.setState({ months: _this.state.months.concat([childData]) });
+          });
+        });
+      } catch (err) {
+        console.log('no data for months');
+      }
     };
 
     _this.pullFromDB = function (routeName) {
@@ -24726,20 +24746,18 @@ var App = function (_React$Component) {
           });
           _this.setState(_defineProperty({}, routeName, pulledContent));
         } catch (err) {
-          console.log('no data');
+          console.log('no data for ' + routeName);
         }
       });
     };
 
     _this.addPlayer = function (name) {
       var players = _this.state.players;
-      var lastPosition = void 0,
-          latestRank = void 0;
       players.sort(function (a, b) {
         return a.rank - b.rank;
       });
-      lastPosition = players.slice(-1)[0];
-      latestRank = lastPosition.rank + 1;
+      var lastPosition = players.slice(-1)[0];
+      var latestRank = lastPosition.rank + 1;
       var newPerson = {
         name: name,
         rank: latestRank,
@@ -24753,6 +24771,7 @@ var App = function (_React$Component) {
     };
 
     _this.submit = function (player1, player2) {
+      _this.clearInput();
       var players = _this.state.players;
       var playerOne = _this.getPlayer(player1);
       var playerTwo = _this.getPlayer(player2);
@@ -24778,6 +24797,7 @@ var App = function (_React$Component) {
     _this.state = {
       players: [],
       matches: [],
+      months: [],
       showTable: true
     };
     return _this;
@@ -24829,10 +24849,9 @@ var App = function (_React$Component) {
     key: 'postToSlack',
     value: function postToSlack(winner, loser) {
       var slackName = this.state.slackNameValue;
-      var Slack = __webpack_require__(349);
-      var slack = new Slack('https://hooks.slack.com/services/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');
+      var slack = new _browserNodeSlack2.default('https://hooks.slack.com/services/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');
       slack.send({
-        channel: "#consumer-tt-rankings",
+        channel: "#rich-test-public",
         username: "table-tennis-bot",
         icon_emoji: ":table_tennis_paddle_and_ball:",
         text: '<@' + winner.name + '> ' + winner.score + '-' + loser.score + ' <@' + loser.name + '>'
@@ -24853,13 +24872,47 @@ var App = function (_React$Component) {
           name: playerTwo.name,
           score: playerTwo.score
         },
-        date: formattedDate
+        day: formattedDate.day,
+        month: 'November',
+        year: formattedDate.year
       };
       this.setState({ matches: this.state.matches.concat([match]) }, function () {
-        _firebase2.default.database().ref('matches/').set({
+        _firebase2.default.database().ref('matches/').update({
           matches: this.state.matches
         });
       });
+      this.moreData(match.month, playerOne, playerTwo);
+    }
+  }, {
+    key: 'moreData',
+    value: function moreData(month, playerOne, playerTwo) {
+      var postData = {
+        month: month,
+        p1: {
+          name: playerOne.name,
+          score: playerOne.score
+        },
+        p2: {
+          name: playerTwo.name,
+          score: playerTwo.score
+        }
+      };
+      var updates = {};
+      this.getLatestId();
+      var newPostKey = _firebase2.default.database().ref().child('matches' + '/bymonth' + '/' + month).push().key;
+      updates['matches' + '/bymonth' + '/' + month + '/' + 'matches/' + this.getLatestId()] = postData;
+      return _firebase2.default.database().ref().update(updates);
+    }
+  }, {
+    key: 'getLatestId',
+    value: function getLatestId() {
+      var highestNumber = 0;
+      this.state.months.map(function (month) {
+        if (month.matches.length > highestNumber) {
+          highestNumber = month.matches.length;
+        }
+      });
+      return highestNumber;
     }
   }, {
     key: 'toggle',
@@ -24871,6 +24924,14 @@ var App = function (_React$Component) {
       });
     }
   }, {
+    key: 'clearInput',
+    value: function clearInput() {
+      this.refs.p1Name.value = '';
+      this.refs.p2Name.value = '';
+      this.refs.p1Score.value = '';
+      this.refs.p2Score.value = '';
+    }
+  }, {
     key: 'formatDate',
     value: function formatDate(date) {
       var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -24879,7 +24940,11 @@ var App = function (_React$Component) {
       var monthIndex = date.getMonth();
       var year = date.getFullYear();
 
-      return day + ' ' + monthNames[monthIndex] + ' ' + year;
+      return {
+        day: day,
+        month: monthNames[monthIndex],
+        year: year
+      };
     }
   }, {
     key: 'render',
@@ -24888,7 +24953,8 @@ var App = function (_React$Component) {
 
       var _state = this.state,
           players = _state.players,
-          matches = _state.matches;
+          matches = _state.matches,
+          months = _state.months;
 
       return _react2.default.createElement(
         'div',
@@ -24943,32 +25009,36 @@ var App = function (_React$Component) {
             'submit result'
           )
         ),
-        this.state.showTable ? _react2.default.createElement(
+        _react2.default.createElement(
           'div',
-          { className: 'table' },
-          _react2.default.createElement(
-            'button',
-            { className: 'toggleButton', onClick: function onClick() {
-                return _this2.toggle();
-              } },
-            'Show Matches'
-          ),
-          _react2.default.createElement(_Table2.default, {
-            players: players
-          })
-        ) : _react2.default.createElement(
-          'div',
-          { className: 'recentMatches' },
-          _react2.default.createElement(
-            'button',
-            { className: 'toggleButton', onClick: function onClick() {
-                return _this2.toggle();
-              } },
-            'Show Table'
-          ),
-          _react2.default.createElement(_Matches2.default, {
-            matches: matches
-          })
+          { className: 'matchesContainer' },
+          this.state.showTable ? _react2.default.createElement(
+            'div',
+            { className: 'table' },
+            _react2.default.createElement(
+              'button',
+              { className: 'toggleButton', onClick: function onClick() {
+                  return _this2.toggle();
+                } },
+              'Show Matches'
+            ),
+            _react2.default.createElement(_Table2.default, {
+              players: players
+            })
+          ) : _react2.default.createElement(
+            'div',
+            { className: 'matchesContainer' },
+            _react2.default.createElement(
+              'button',
+              { className: 'toggleButton', onClick: function onClick() {
+                  return _this2.toggle();
+                } },
+              'Show Table'
+            ),
+            _react2.default.createElement(_Matches2.default, {
+              months: months
+            })
+          )
         )
       );
     }
@@ -49587,457 +49657,9 @@ var messaging = exports.messaging = firebase.messaging();
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _react = __webpack_require__(63);
-
-var _react2 = _interopRequireDefault(_react);
-
-__webpack_require__(341);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var Matches = function (_React$Component) {
-  _inherits(Matches, _React$Component);
-
-  function Matches() {
-    _classCallCheck(this, Matches);
-
-    return _possibleConstructorReturn(this, (Matches.__proto__ || Object.getPrototypeOf(Matches)).apply(this, arguments));
-  }
-
-  _createClass(Matches, [{
-    key: 'render',
-    value: function render() {
-      return _react2.default.createElement(
-        'div',
-        null,
-        _react2.default.createElement(
-          'h1',
-          null,
-          'Recent Matches'
-        ),
-        _react2.default.createElement(
-          'div',
-          { className: 'matches' },
-          this.props.matches.map(function (match, index) {
-            return _react2.default.createElement(
-              'div',
-              { key: index, className: 'match' },
-              _react2.default.createElement(
-                'span',
-                { className: 'playerName' },
-                match.playerOne.name
-              ),
-              _react2.default.createElement(
-                'span',
-                { className: 'playerScore' },
-                match.playerOne.score,
-                ' '
-              ),
-              _react2.default.createElement(
-                'span',
-                { className: 'playerScore' },
-                ' ',
-                match.playerTwo.score,
-                ' '
-              ),
-              ' ',
-              _react2.default.createElement(
-                'span',
-                { className: 'playerName' },
-                ' ',
-                match.playerTwo.name
-              )
-            );
-          })
-        )
-      );
-    }
-  }]);
-
-  return Matches;
-}(_react2.default.Component);
-
-exports.default = Matches;
-
-/***/ }),
-/* 341 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(342);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(96)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
-			var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 342 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(95)(undefined);
-// imports
-
-
-// module
-exports.push([module.i, ".matches div {\n  display: flex;\n  text-align: center;\n  font-size: 15px; }\n\n.matches div .playerName {\n  width: 50%;\n  padding: 5px; }\n\n.matches div .playerScore {\n  width: 3%;\n  padding: 5px; }\n\n.matches span:first-child {\n  text-align: right;\n  padding: 5px; }\n\n.matches span:last-child {\n  text-align: left;\n  padding: 5px; }\n\n.playerScore {\n  background-color: orange;\n  margin-left: 3px;\n  margin-right: 3px; }\n\n.match {\n  padding: 5px; }\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 343 */
-/***/ (function(module, exports) {
-
-
-/**
- * When source maps are enabled, `style-loader` uses a link element with a data-uri to
- * embed the css on the page. This breaks all relative urls because now they are relative to a
- * bundle instead of the current page.
- *
- * One solution is to only use full urls, but that may be impossible.
- *
- * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
- *
- * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
- *
- */
-
-module.exports = function (css) {
-  // get current location
-  var location = typeof window !== "undefined" && window.location;
-
-  if (!location) {
-    throw new Error("fixUrls requires window.location");
-  }
-
-	// blank or null?
-	if (!css || typeof css !== "string") {
-	  return css;
-  }
-
-  var baseUrl = location.protocol + "//" + location.host;
-  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
-
-	// convert each url(...)
-	/*
-	This regular expression is just a way to recursively match brackets within
-	a string.
-
-	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
-	   (  = Start a capturing group
-	     (?:  = Start a non-capturing group
-	         [^)(]  = Match anything that isn't a parentheses
-	         |  = OR
-	         \(  = Match a start parentheses
-	             (?:  = Start another non-capturing groups
-	                 [^)(]+  = Match anything that isn't a parentheses
-	                 |  = OR
-	                 \(  = Match a start parentheses
-	                     [^)(]*  = Match anything that isn't a parentheses
-	                 \)  = Match a end parentheses
-	             )  = End Group
-              *\) = Match anything and then a close parens
-          )  = Close non-capturing group
-          *  = Match anything
-       )  = Close capturing group
-	 \)  = Match a close parens
-
-	 /gi  = Get all matches, not the first.  Be case insensitive.
-	 */
-	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
-		// strip quotes (if they exist)
-		var unquotedOrigUrl = origUrl
-			.trim()
-			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
-			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
-
-		// already a full url? no change
-		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
-		  return fullMatch;
-		}
-
-		// convert the url to a full url
-		var newUrl;
-
-		if (unquotedOrigUrl.indexOf("//") === 0) {
-		  	//TODO: should we add protocol?
-			newUrl = unquotedOrigUrl;
-		} else if (unquotedOrigUrl.indexOf("/") === 0) {
-			// path should be relative to the base url
-			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
-		} else {
-			// path should be relative to current directory
-			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
-		}
-
-		// send back the fixed url(...)
-		return "url(" + JSON.stringify(newUrl) + ")";
-	});
-
-	// send back the fixed css
-	return fixedCss;
-};
-
-
-/***/ }),
-/* 344 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _react = __webpack_require__(63);
-
-var _react2 = _interopRequireDefault(_react);
-
-__webpack_require__(345);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var Table = function (_React$Component) {
-  _inherits(Table, _React$Component);
-
-  function Table() {
-    _classCallCheck(this, Table);
-
-    return _possibleConstructorReturn(this, (Table.__proto__ || Object.getPrototypeOf(Table)).apply(this, arguments));
-  }
-
-  _createClass(Table, [{
-    key: 'render',
-    value: function render() {
-      return _react2.default.createElement(
-        'div',
-        null,
-        _react2.default.createElement(
-          'div',
-          null,
-          _react2.default.createElement(
-            'h1',
-            null,
-            ' Table '
-          ),
-          _react2.default.createElement(
-            'table',
-            null,
-            _react2.default.createElement(
-              'tr',
-              null,
-              _react2.default.createElement(
-                'th',
-                { className: 'headings' },
-                'Rank'
-              ),
-              _react2.default.createElement(
-                'th',
-                { className: 'headings' },
-                'Name'
-              ),
-              _react2.default.createElement(
-                'th',
-                { className: 'headings' },
-                'Played'
-              ),
-              _react2.default.createElement(
-                'th',
-                { className: 'headings' },
-                'Wins'
-              ),
-              _react2.default.createElement(
-                'th',
-                { className: 'headings' },
-                'Losses'
-              )
-            ),
-            this.props.players.sort(function (a, b) {
-              return a.rank - b.rank;
-            }).map(function (player, index) {
-              index += 1;
-              return _react2.default.createElement(
-                'tr',
-                { key: index, className: 'row-one' },
-                _react2.default.createElement(
-                  'th',
-                  { className: 'stats' },
-                  player.rank
-                ),
-                _react2.default.createElement(
-                  'th',
-                  { className: 'stats' },
-                  player.name
-                ),
-                _react2.default.createElement(
-                  'th',
-                  { className: 'stats' },
-                  player.played
-                ),
-                _react2.default.createElement(
-                  'th',
-                  { className: 'stats' },
-                  player.wins
-                ),
-                _react2.default.createElement(
-                  'th',
-                  { className: 'stats' },
-                  player.losses
-                )
-              );
-            }, this)
-          )
-        )
-      );
-    }
-  }]);
-
-  return Table;
-}(_react2.default.Component);
-
-exports.default = Table;
-
-/***/ }),
-/* 345 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(346);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(96)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
-			var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 346 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(95)(undefined);
-// imports
-
-
-// module
-exports.push([module.i, ".row-one:nth-child(2) {\n  color: gold; }\n\ntable {\n  font-size: 25px; }\n\n.headings {\n  padding: 10px; }\n\n.stats {\n  font-weight: normal; }\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 347 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(348);
-if(typeof content === 'string') content = [[module.i, content, '']];
-// Prepare cssTransformation
-var transform;
-
-var options = {}
-options.transform = transform
-// add the styles to the DOM
-var update = __webpack_require__(96)(content, options);
-if(content.locals) module.exports = content.locals;
-// Hot Module Replacement
-if(false) {
-	// When the styles change, update the <style> tags
-	if(!content.locals) {
-		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
-			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./index.scss");
-			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-			update(newContent);
-		});
-	}
-	// When the module is disposed, remove the <style> tags
-	module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 348 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(95)(undefined);
-// imports
-
-
-// module
-exports.push([module.i, ".container {\n  text-align: center;\n  font-family: monospace; }\n\n.heading {\n  background-color: black;\n  color: orange; }\n\n.player {\n  padding: 5px;\n  font-size: 20px; }\n\ninput::-webkit-input-placeholder {\n  font-size: 12px;\n  color: #C7C7CD; }\n\ninput:focus::-webkit-input-placeholder {\n  color: transparent; }\n\n.score {\n  padding: 5px;\n  width: 50px;\n  font-size: 20px; }\n\n.table {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center; }\n\n.recentMatches {\n  width: 600px;\n  margin: auto; }\n\n.toggleButton {\n  background-color: orange;\n  border: none;\n  color: white;\n  padding: 15px 32px;\n  text-align: center;\n  text-decoration: none;\n  display: inline-block;\n  font-size: 16px;\n  cursor: pointer;\n  outline: none; }\n\ninput[type=number]::-webkit-inner-spin-button,\ninput[type=number]::-webkit-outer-spin-button {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  margin: 0; }\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 349 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 /* WEBPACK VAR INJECTION */(function(process) {
 
-var request = __webpack_require__(350)
+var request = __webpack_require__(341)
 
 function Slack (hook_url, http_proxy_options) {
   this.hook_url = hook_url
@@ -50107,7 +49729,7 @@ module.exports = Slack
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 350 */
+/* 341 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// Browser Request
@@ -50607,6 +50229,758 @@ function b64_enc (data) {
 //UMD FOOTER START
 }));
 //UMD FOOTER END
+
+
+/***/ }),
+/* 342 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(63);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _immutabilityHelper = __webpack_require__(343);
+
+var _immutabilityHelper2 = _interopRequireDefault(_immutabilityHelper);
+
+__webpack_require__(345);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Matches = function (_React$Component) {
+  _inherits(Matches, _React$Component);
+
+  function Matches() {
+    _classCallCheck(this, Matches);
+
+    return _possibleConstructorReturn(this, (Matches.__proto__ || Object.getPrototypeOf(Matches)).apply(this, arguments));
+  }
+
+  _createClass(Matches, [{
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        null,
+        _react2.default.createElement(
+          'div',
+          { className: 'matches' },
+          this.props.months.map(function (month, monthIndex) {
+            return _react2.default.createElement(
+              'div',
+              { key: '' + monthIndex, className: 'allMatches' },
+              _react2.default.createElement(
+                'h3',
+                null,
+                month.name
+              ),
+              _react2.default.createElement('input', { className: 'toggleBox', id: 'toggle', type: 'checkbox' }),
+              _react2.default.createElement(
+                'label',
+                { htmlFor: 'toggle' },
+                '+'
+              ),
+              month.matches.map(function (match, matchIndex) {
+                return _react2.default.createElement(
+                  'div',
+                  { key: '$' + matchIndex, className: 'expand match' },
+                  _react2.default.createElement(
+                    'span',
+                    { className: 'playerName' },
+                    match.p1.name
+                  ),
+                  _react2.default.createElement(
+                    'span',
+                    { className: 'playerScore' },
+                    match.p1.score,
+                    ' '
+                  ),
+                  _react2.default.createElement(
+                    'span',
+                    { className: 'playerScore' },
+                    ' ',
+                    match.p2.score,
+                    ' '
+                  ),
+                  _react2.default.createElement(
+                    'span',
+                    { className: 'playerName' },
+                    ' ',
+                    match.p2.name
+                  )
+                );
+              })
+            );
+          })
+        )
+      );
+    }
+  }]);
+
+  return Matches;
+}(_react2.default.Component);
+
+exports.default = Matches;
+
+/***/ }),
+/* 343 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var invariant = __webpack_require__(344);
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var splice = Array.prototype.splice;
+
+var assign = Object.assign || /* istanbul ignore next */ function assign(target, source) {
+  getAllKeys(source).forEach(function(key) {
+    if (hasOwnProperty.call(source, key)) {
+      target[key] = source[key];
+    }
+  });
+  return target;
+};
+
+var getAllKeys = typeof Object.getOwnPropertySymbols === 'function' ?
+  function(obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)) } :
+  /* istanbul ignore next */ function(obj) { return Object.keys(obj) };
+
+/* istanbul ignore next */
+function copy(object) {
+  if (object instanceof Array) {
+    return assign(object.constructor(object.length), object)
+  } else if (object && typeof object === 'object') {
+    var prototype = object.constructor && object.constructor.prototype
+    return assign(Object.create(prototype || null), object);
+  } else {
+    return object;
+  }
+}
+
+function newContext() {
+  var commands = assign({}, defaultCommands);
+  update.extend = function(directive, fn) {
+    commands[directive] = fn;
+  };
+  update.isEquals = function(a, b) { return a === b; };
+
+  return update;
+
+  function update(object, spec) {
+    if (!(Array.isArray(object) && Array.isArray(spec))) {
+      invariant(
+        !Array.isArray(spec),
+        'update(): You provided an invalid spec to update(). The spec may ' +
+        'not contain an array except as the value of $set, $push, $unshift, ' +
+        '$splice or any custom command allowing an array value.'
+      );
+    }
+
+    invariant(
+      typeof spec === 'object' && spec !== null,
+      'update(): You provided an invalid spec to update(). The spec and ' +
+      'every included key path must be plain objects containing one of the ' +
+      'following commands: %s.',
+      Object.keys(commands).join(', ')
+    );
+
+    var nextObject = object;
+    var index, key;
+    getAllKeys(spec).forEach(function(key) {
+      if (hasOwnProperty.call(commands, key)) {
+        var objectWasNextObject = object === nextObject;
+        nextObject = commands[key](spec[key], nextObject, spec, object);
+        if (objectWasNextObject && update.isEquals(nextObject, object)) {
+          nextObject = object;
+        }
+      } else {
+        var nextValueForKey = update(object[key], spec[key]);
+        if (!update.isEquals(nextValueForKey, nextObject[key]) || typeof nextValueForKey === 'undefined' && !hasOwnProperty.call(object, key)) {
+          if (nextObject === object) {
+            nextObject = copy(object);
+          }
+          nextObject[key] = nextValueForKey;
+        }
+      }
+    })
+    return nextObject;
+  }
+
+}
+
+var defaultCommands = {
+  $push: function(value, nextObject, spec) {
+    invariantPushAndUnshift(nextObject, spec, '$push');
+    return value.length ? nextObject.concat(value) : nextObject;
+  },
+  $unshift: function(value, nextObject, spec) {
+    invariantPushAndUnshift(nextObject, spec, '$unshift');
+    return value.length ? value.concat(nextObject) : nextObject;
+  },
+  $splice: function(value, nextObject, spec, originalObject) {
+    invariantSplices(nextObject, spec);
+    value.forEach(function(args) {
+      invariantSplice(args);
+      if (nextObject === originalObject && args.length) nextObject = copy(originalObject);
+      splice.apply(nextObject, args);
+    });
+    return nextObject;
+  },
+  $set: function(value, nextObject, spec) {
+    invariantSet(spec);
+    return value;
+  },
+  $toggle: function(targets, nextObject) {
+    invariantToggle(targets, nextObject);
+    var nextObjectCopy = targets.length ? copy(nextObject) : nextObject;
+
+    targets.forEach(function(target) {
+      nextObjectCopy[target] = !nextObject[target];
+    });
+
+    return nextObjectCopy;
+  },
+  $unset: function(value, nextObject, spec, originalObject) {
+    invariant(
+      Array.isArray(value),
+      'update(): expected spec of $unset to be an array; got %s. ' +
+      'Did you forget to wrap the key(s) in an array?',
+      value
+    );
+    value.forEach(function(key) {
+      if (Object.hasOwnProperty.call(nextObject, key)) {
+        if (nextObject === originalObject) nextObject = copy(originalObject);
+        delete nextObject[key];
+      }
+    });
+    return nextObject;
+  },
+  $merge: function(value, nextObject, spec, originalObject) {
+    invariantMerge(nextObject, value);
+    getAllKeys(value).forEach(function(key) {
+      if (value[key] !== nextObject[key]) {
+        if (nextObject === originalObject) nextObject = copy(originalObject);
+        nextObject[key] = value[key];
+      }
+    });
+    return nextObject;
+  },
+  $apply: function(value, original) {
+    invariantApply(value);
+    return value(original);
+  }
+};
+
+module.exports = newContext();
+module.exports.newContext = newContext;
+
+// invariants
+
+function invariantPushAndUnshift(value, spec, command) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected target of %s to be an array; got %s.',
+    command,
+    value
+  );
+  var specValue = spec[command];
+  invariant(
+    Array.isArray(specValue),
+    'update(): expected spec of %s to be an array; got %s. ' +
+    'Did you forget to wrap your parameter in an array?',
+    command,
+    specValue
+  );
+}
+
+function invariantToggle(value) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected spec of $toggle to be an array; got %s. ' +
+    'Did you forget to wrap the key(s) in an array?',
+    value
+  );
+}
+
+function invariantSplices(value, spec) {
+  invariant(
+    Array.isArray(value),
+    'Expected $splice target to be an array; got %s',
+    value
+  );
+  invariantSplice(spec['$splice']);
+}
+
+function invariantSplice(value) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected spec of $splice to be an array of arrays; got %s. ' +
+    'Did you forget to wrap your parameters in an array?',
+    value
+  );
+}
+
+function invariantApply(fn) {
+  invariant(
+    typeof fn === 'function',
+    'update(): expected spec of $apply to be a function; got %s.',
+    fn
+  );
+}
+
+function invariantSet(spec) {
+  invariant(
+    Object.keys(spec).length === 1,
+    'Cannot have more than one key in an object with $set'
+  );
+}
+
+function invariantMerge(target, specValue) {
+  invariant(
+    specValue && typeof specValue === 'object',
+    'update(): $merge expects a spec of type \'object\'; got %s',
+    specValue
+  );
+  invariant(
+    target && typeof target === 'object',
+    'update(): $merge expects a target of type \'object\'; got %s',
+    target
+  );
+}
+
+
+/***/ }),
+/* 344 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var invariant = function(condition, format, a, b, c, d, e, f) {
+  if (process.env.NODE_ENV !== 'production') {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  }
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error(
+        'Minified exception occurred; use the non-minified dev environment ' +
+        'for the full error message and additional helpful warnings.'
+      );
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(
+        format.replace(/%s/g, function() { return args[argIndex++]; })
+      );
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+};
+
+module.exports = invariant;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
+
+/***/ }),
+/* 345 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(346);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(96)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
+			var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 346 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(95)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".matches div {\n  display: flex;\n  text-align: center;\n  font-size: 15px; }\n\n.matches div .playerName {\n  width: 50%;\n  padding: 5px; }\n\n.matches div .playerScore {\n  width: 8%;\n  padding: 2px; }\n\n.matches span:first-child {\n  text-align: right;\n  padding: 5px; }\n\n.matches span:last-child {\n  text-align: left;\n  padding: 5px; }\n\n.playerScore {\n  background-color: orange;\n  margin-left: 3px;\n  margin-right: 3px; }\n\n.allMatches {\n  display: flex;\n  flex-direction: column; }\n\n.match {\n  border-bottom: 1px solid black;\n  overflow: hidden;\n  margin-bottom: -1px; }\n\n#toggle:checked ~ .expand {\n  height: 50px; }\n\n#toggle:checked ~ label::before {\n  content: \"-\"; }\n\n#toggle {\n  display: none;\n  content: ''; }\n\n#toggle::before {\n  content: '+'; }\n\n.expand {\n  height: 0px;\n  transition: height 0.5s;\n  color: black; }\n\n.matchesContainer {\n  margin: auto;\n  width: 500px; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 347 */
+/***/ (function(module, exports) {
+
+
+/**
+ * When source maps are enabled, `style-loader` uses a link element with a data-uri to
+ * embed the css on the page. This breaks all relative urls because now they are relative to a
+ * bundle instead of the current page.
+ *
+ * One solution is to only use full urls, but that may be impossible.
+ *
+ * Instead, this function "fixes" the relative urls to be absolute according to the current page location.
+ *
+ * A rudimentary test suite is located at `test/fixUrls.js` and can be run via the `npm test` command.
+ *
+ */
+
+module.exports = function (css) {
+  // get current location
+  var location = typeof window !== "undefined" && window.location;
+
+  if (!location) {
+    throw new Error("fixUrls requires window.location");
+  }
+
+	// blank or null?
+	if (!css || typeof css !== "string") {
+	  return css;
+  }
+
+  var baseUrl = location.protocol + "//" + location.host;
+  var currentDir = baseUrl + location.pathname.replace(/\/[^\/]*$/, "/");
+
+	// convert each url(...)
+	/*
+	This regular expression is just a way to recursively match brackets within
+	a string.
+
+	 /url\s*\(  = Match on the word "url" with any whitespace after it and then a parens
+	   (  = Start a capturing group
+	     (?:  = Start a non-capturing group
+	         [^)(]  = Match anything that isn't a parentheses
+	         |  = OR
+	         \(  = Match a start parentheses
+	             (?:  = Start another non-capturing groups
+	                 [^)(]+  = Match anything that isn't a parentheses
+	                 |  = OR
+	                 \(  = Match a start parentheses
+	                     [^)(]*  = Match anything that isn't a parentheses
+	                 \)  = Match a end parentheses
+	             )  = End Group
+              *\) = Match anything and then a close parens
+          )  = Close non-capturing group
+          *  = Match anything
+       )  = Close capturing group
+	 \)  = Match a close parens
+
+	 /gi  = Get all matches, not the first.  Be case insensitive.
+	 */
+	var fixedCss = css.replace(/url\s*\(((?:[^)(]|\((?:[^)(]+|\([^)(]*\))*\))*)\)/gi, function(fullMatch, origUrl) {
+		// strip quotes (if they exist)
+		var unquotedOrigUrl = origUrl
+			.trim()
+			.replace(/^"(.*)"$/, function(o, $1){ return $1; })
+			.replace(/^'(.*)'$/, function(o, $1){ return $1; });
+
+		// already a full url? no change
+		if (/^(#|data:|http:\/\/|https:\/\/|file:\/\/\/)/i.test(unquotedOrigUrl)) {
+		  return fullMatch;
+		}
+
+		// convert the url to a full url
+		var newUrl;
+
+		if (unquotedOrigUrl.indexOf("//") === 0) {
+		  	//TODO: should we add protocol?
+			newUrl = unquotedOrigUrl;
+		} else if (unquotedOrigUrl.indexOf("/") === 0) {
+			// path should be relative to the base url
+			newUrl = baseUrl + unquotedOrigUrl; // already starts with '/'
+		} else {
+			// path should be relative to current directory
+			newUrl = currentDir + unquotedOrigUrl.replace(/^\.\//, ""); // Strip leading './'
+		}
+
+		// send back the fixed url(...)
+		return "url(" + JSON.stringify(newUrl) + ")";
+	});
+
+	// send back the fixed css
+	return fixedCss;
+};
+
+
+/***/ }),
+/* 348 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(63);
+
+var _react2 = _interopRequireDefault(_react);
+
+__webpack_require__(349);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Table = function (_React$Component) {
+  _inherits(Table, _React$Component);
+
+  function Table() {
+    _classCallCheck(this, Table);
+
+    return _possibleConstructorReturn(this, (Table.__proto__ || Object.getPrototypeOf(Table)).apply(this, arguments));
+  }
+
+  _createClass(Table, [{
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        null,
+        _react2.default.createElement(
+          'div',
+          null,
+          _react2.default.createElement(
+            'h1',
+            null,
+            ' Table '
+          ),
+          _react2.default.createElement(
+            'table',
+            null,
+            _react2.default.createElement(
+              'tbody',
+              null,
+              _react2.default.createElement(
+                'tr',
+                null,
+                _react2.default.createElement(
+                  'th',
+                  { className: 'headings' },
+                  'Rank'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  { className: 'headings' },
+                  'Name'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  { className: 'headings' },
+                  'Played'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  { className: 'headings' },
+                  'Wins'
+                ),
+                _react2.default.createElement(
+                  'th',
+                  { className: 'headings' },
+                  'Losses'
+                )
+              ),
+              this.props.players.sort(function (a, b) {
+                return a.rank - b.rank;
+              }).map(function (player, index) {
+                index += 1;
+                return _react2.default.createElement(
+                  'tr',
+                  { key: index, className: 'row-one' },
+                  _react2.default.createElement(
+                    'th',
+                    { className: 'stats' },
+                    player.rank
+                  ),
+                  _react2.default.createElement(
+                    'th',
+                    { className: 'stats' },
+                    player.name
+                  ),
+                  _react2.default.createElement(
+                    'th',
+                    { className: 'stats' },
+                    player.played
+                  ),
+                  _react2.default.createElement(
+                    'th',
+                    { className: 'stats' },
+                    player.wins
+                  ),
+                  _react2.default.createElement(
+                    'th',
+                    { className: 'stats' },
+                    player.losses
+                  )
+                );
+              }, this)
+            )
+          )
+        )
+      );
+    }
+  }]);
+
+  return Table;
+}(_react2.default.Component);
+
+exports.default = Table;
+
+/***/ }),
+/* 349 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(350);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(96)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
+			var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/sass-loader/lib/loader.js!./index.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 350 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(95)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".row-one:nth-child(2) {\n  color: gold; }\n\ntable {\n  font-size: 25px; }\n\n.headings {\n  padding: 10px; }\n\n.stats {\n  font-weight: normal; }\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 351 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(352);
+if(typeof content === 'string') content = [[module.i, content, '']];
+// Prepare cssTransformation
+var transform;
+
+var options = {}
+options.transform = transform
+// add the styles to the DOM
+var update = __webpack_require__(96)(content, options);
+if(content.locals) module.exports = content.locals;
+// Hot Module Replacement
+if(false) {
+	// When the styles change, update the <style> tags
+	if(!content.locals) {
+		module.hot.accept("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./index.scss", function() {
+			var newContent = require("!!../../node_modules/css-loader/index.js!../../node_modules/sass-loader/lib/loader.js!./index.scss");
+			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+			update(newContent);
+		});
+	}
+	// When the module is disposed, remove the <style> tags
+	module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 352 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(95)(undefined);
+// imports
+
+
+// module
+exports.push([module.i, ".container {\n  text-align: center;\n  font-family: monospace; }\n\n.heading {\n  background-color: black;\n  color: orange; }\n\n.player {\n  padding: 5px;\n  font-size: 20px; }\n\ninput::-webkit-input-placeholder {\n  font-size: 12px;\n  color: #C7C7CD; }\n\ninput:focus::-webkit-input-placeholder {\n  color: transparent; }\n\n.score {\n  padding: 5px;\n  width: 50px;\n  font-size: 20px; }\n\n.table {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center; }\n\n.recentMatches {\n  width: 600px;\n  margin: auto; }\n\n.toggleButton {\n  background-color: orange;\n  border: none;\n  color: white;\n  padding: 15px 32px;\n  text-align: center;\n  text-decoration: none;\n  display: inline-block;\n  font-size: 16px;\n  cursor: pointer;\n  outline: none; }\n\ninput[type=number]::-webkit-inner-spin-button,\ninput[type=number]::-webkit-outer-spin-button {\n  -webkit-appearance: none;\n  -moz-appearance: none;\n  appearance: none;\n  margin: 0; }\n", ""]);
+
+// exports
 
 
 /***/ })

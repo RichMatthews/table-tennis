@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import firebase from 'firebase';
 import { rootRef } from './firebase/config.js';
+import Slack from 'browser-node-slack';
 
 import Matches from './components/Matches';
 import Table from './components/Table';
@@ -15,6 +16,7 @@ class App extends React.Component {
    this.state = {
      players: [],
      matches: [],
+     months: [],
      showTable: true
    }
  }
@@ -22,6 +24,7 @@ class App extends React.Component {
  componentDidMount = () => {
    this.pullFromDB('players');
    this.pullFromDB('matches');
+   this.pullMonths()
  }
 
  pullFromFirebase = (query) => {
@@ -30,28 +33,44 @@ class App extends React.Component {
    });
  }
 
+ pullMonths = () => {
+   try {
+     const query = firebase.database().ref('matches/' + 'bymonth/').orderByKey();
+     query.once("value")
+      .then((snapshot) => {
+        snapshot.forEach((childSnapshot) => {
+          const key = childSnapshot.key;
+          const childData = childSnapshot.val();
+          this.setState({months: this.state.months.concat([childData])})
+        });
+      });
+   }
+   catch(err){
+     console.log(`no data for months`);
+   }
+ }
+
  pullFromDB = (routeName) => {
    this.pullFromFirebase(`/${routeName}/${routeName}`).then((data) => {
      try {
-       let pulledContent = Object.keys(data.val()).map(function(key) {
+       const pulledContent = Object.keys(data.val()).map(function(key) {
          return data.val()[key];
        })
        this.setState({[routeName]: pulledContent});
      }
      catch(err){
-       console.log('no data');
+       console.log(`no data for ${routeName}`);
      }
   })
  }
 
 addPlayer = (name) => {
-  let players = this.state.players;
-  let lastPosition, latestRank;
+  const players = this.state.players;
   players.sort(function(a, b) {
     return (a.rank) - (b.rank);
   })
-  lastPosition = players.slice(-1)[0];
-  latestRank = lastPosition.rank +1;
+  const lastPosition = players.slice(-1)[0];
+  const latestRank = lastPosition.rank +1;
   const newPerson = {
     name: name,
     rank: latestRank,
@@ -83,30 +102,31 @@ incrementStats(winner, loser) {
 }
 
 getPlayer(p) {
-    let players = this.state.players;
-    let person = players.find(function(player){
+    const players = this.state.players;
+    const person = players.find(function(player){
       return player.name == p.name;
     });
     return person;
  }
 
  changeRank(winner, loser) {
-   var tempRank = winner.rank;
+   const tempRank = winner.rank;
    winner.rank = loser.rank;
    loser.rank = tempRank;
  }
 
  submit = (player1, player2) => {
-   let players = this.state.players;
-   let playerOne = this.getPlayer(player1);
-   let playerTwo = this.getPlayer(player2);
+   this.clearInput();
+   const players = this.state.players;
+   const playerOne = this.getPlayer(player1);
+   const playerTwo = this.getPlayer(player2);
    if (playerOne == undefined || playerTwo == undefined){
       alert('one of these players does not exist')
    }
    else {
      playerOne.score = player1.score;
      playerTwo.score = player2.score;
-     let result = this.workOutWinner(playerOne, playerTwo);
+     const result = this.workOutWinner(playerOne, playerTwo);
      this.postToSlack(result.winner, result.loser);
      this.postMatch(player1, player2);
      this.incrementStats(result.winner, result.loser);
@@ -127,11 +147,10 @@ getPlayer(p) {
  }
 
  postToSlack(winner, loser){
-   let slackName = this.state.slackNameValue;
-   let Slack = require('browser-node-slack');
-   let slack = new Slack('https://hooks.slack.com/services/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');
+   const slackName = this.state.slackNameValue;
+   const slack = new Slack('https://hooks.slack.com/services/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');
    slack.send({
-     channel: "#consumer-tt-rankings",
+     channel: "#rich-test-public",
      username: "table-tennis-bot",
      icon_emoji: ":table_tennis_paddle_and_ball:",
      text: `<@${winner.name}> ${winner.score}-${loser.score} <@${loser.name}>`
@@ -139,9 +158,9 @@ getPlayer(p) {
  };
 
 postMatch(playerOne, playerTwo) {
-  let matches = this.state.matches;
-  let date = new Date();
-  let formattedDate = this.formatDate(date)
+  const matches = this.state.matches;
+  const date = new Date();
+  const formattedDate = this.formatDate(date)
   const match = {
     playerOne: {
       name: playerOne.name,
@@ -151,19 +170,58 @@ postMatch(playerOne, playerTwo) {
       name: playerTwo.name,
       score: playerTwo.score
     },
-    date: formattedDate
+    day: formattedDate.day,
+    month: 'November',
+    year: formattedDate.year
   }
   this.setState({matches: this.state.matches.concat([match])}, function() {
-    firebase.database().ref('matches/').set({
+    firebase.database().ref('matches/').update({
       matches: this.state.matches
     });
   });
+  this.moreData(match.month, playerOne, playerTwo)
+}
+
+moreData(month, playerOne, playerTwo){
+  const postData = {
+    month: month,
+    p1: {
+      name: playerOne.name,
+      score: playerOne.score
+    },
+    p2: {
+      name: playerTwo.name,
+      score: playerTwo.score
+    },
+  };
+  const updates = {};
+  this.getLatestId();
+  const newPostKey = firebase.database().ref().child('matches' + '/bymonth' + '/' + month).push().key;
+  updates['matches' + '/bymonth' + '/' + month + '/' + 'matches/' + this.getLatestId()] = postData;
+  return firebase.database().ref().update(updates);
+}
+
+getLatestId(){
+  let highestNumber = 0;
+  this.state.months.map((month) => {
+    if (month.matches.length > highestNumber){
+      highestNumber = month.matches.length;
+    }
+  })
+  return highestNumber;
 }
 
 toggle() {
   this.setState(prevState => ({
     showTable: !prevState.showTable
   }));
+}
+
+clearInput() {
+  this.refs.p1Name.value = '';
+  this.refs.p2Name.value = '';
+  this.refs.p1Score.value = '';
+  this.refs.p2Score.value = '';
 }
 
 formatDate(date) {
@@ -178,12 +236,16 @@ formatDate(date) {
   var monthIndex = date.getMonth();
   var year = date.getFullYear();
 
-  return day + ' ' + monthNames[monthIndex] + ' ' + year;
+  return {
+    day: day,
+    month: monthNames[monthIndex],
+    year: year
+  }
 }
 
 
  render() {
-   const { players, matches } = this.state;
+   const { players, matches, months } = this.state;
     return (
         <div className="container">
           <div className="heading">
@@ -215,22 +277,25 @@ formatDate(date) {
               )}>submit result
             </button>
           </div>
+
+          <div className="matchesContainer">
           {this.state.showTable ?
             <div className="table">
             <button className="toggleButton" onClick={() => this.toggle()}>Show Matches</button>
-            <Table
-            players={players}
-            />
+              <Table
+                players={players}
+              />
             </div>
             :
-            <div className="recentMatches">
+            <div className="matchesContainer">
             <button className="toggleButton" onClick={() => this.toggle()}>Show Table</button>
-            <Matches
-            matches={matches}
-            />
+              <Matches
+                months={months}
+              />
             </div>
           }
-        </div>
+          </div>
+      </div>
     );
   }
 }
