@@ -1,6 +1,13 @@
 .container {
+  display: flex;
+  flex-direction: column;
   text-align: center;
   font-family: monospace;
+}
+
+.component-container {
+  display: flex;
+  justify-content: center;
 }
 
 .heading {
@@ -8,24 +15,26 @@
   color: orange;
 }
 
-.player {
+.player, .score, .addPlayerInpt {
   padding: 5px;
   font-size: 20px;
+  background-color: black;
+  color: orange;
+  outline: orange;
+  border-radius: 8px
 }
 
 input::-webkit-input-placeholder {
     font-size: 12px;
-    color: #C7C7CD;
+    color: orange;
 }
 
 input:focus::-webkit-input-placeholder {
-  color:transparent;
+  color:orange;
 }
 
 .score {
-  padding: 5px;
   width: 50px;
-  font-size: 20px;
 }
 
 .table {
@@ -37,10 +46,13 @@ input:focus::-webkit-input-placeholder {
 
 .recentMatches {
   width: 600px;
-  margin: auto;
 }
 
-.toggleButton {
+.submitData {
+  margin-bottom: 10px;
+}
+
+.toggleButton, .submitBtn, .addBtn {
   background-color: orange;
   border: none;
   color: white;
@@ -51,6 +63,25 @@ input:focus::-webkit-input-placeholder {
   font-size: 16px;
   cursor: pointer;
   outline: none;
+}
+
+.submitBtn {
+  background-color: black;
+}
+
+.navBtn {
+  background-color: orange;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  outline: none;
+  margin: 5px;
 }
 
 input[type=number]::-webkit-inner-spin-button,

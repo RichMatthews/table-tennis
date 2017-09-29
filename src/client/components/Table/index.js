@@ -5,8 +5,7 @@ import './index.scss';
 class Table extends React.Component {
   render() {
     return(
-      <div>
-      <div>
+      <div className="tableContainer">
         <h1> Table </h1>
         <table>
           <tbody>
@@ -32,7 +31,6 @@ class Table extends React.Component {
           </tbody>
          </table>
       </div>
-    </div>
     )
   }
 }

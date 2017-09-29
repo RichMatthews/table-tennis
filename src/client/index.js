@@ -1,11 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import firebase from 'firebase';
-import { rootRef } from './firebase/config.js';
+import './firebase/config.js';
 import Slack from 'browser-node-slack';
 
-import Matches from './components/Matches';
+import AddPlayer from './components/AddPlayer';
+import Players from './components/Players';
 import Table from './components/Table';
+import Matches from './components/Matches';
+
 
 import './index.scss';
 
@@ -17,7 +20,8 @@ class App extends React.Component {
      players: [],
      matches: [],
      months: [],
-     showTable: true
+     display: null,
+     loading: true
    }
  }
 
@@ -42,11 +46,12 @@ class App extends React.Component {
           const key = childSnapshot.key;
           const childData = childSnapshot.val();
           this.setState({months: this.state.months.concat([childData])})
+          this.setState({loading: false})
         });
       });
    }
    catch(err){
-     console.log(`no data for months`);
+     console.error(`${err}, no data for months`);
    }
  }
 
@@ -59,7 +64,7 @@ class App extends React.Component {
        this.setState({[routeName]: pulledContent});
      }
      catch(err){
-       console.log(`no data for ${routeName}`);
+       console.error(`${err}, no data for ${routeName}`);
      }
   })
  }
@@ -116,12 +121,12 @@ getPlayer(p) {
  }
 
  submit = (player1, player2) => {
-   this.clearInput();
+  //  this.clearInput();
    const players = this.state.players;
    const playerOne = this.getPlayer(player1);
    const playerTwo = this.getPlayer(player2);
-   if (playerOne == undefined || playerTwo == undefined){
-      alert('one of these players does not exist')
+   if (playerOne == playerTwo){
+      alert('A player cant play themselves. R u daft?')
    }
    else {
      playerOne.score = player1.score;
@@ -137,6 +142,7 @@ getPlayer(p) {
      delete playerTwo["score"];
      this.setState({players: players})
      this.writeUserData();
+     this.resultSubmitted();
    }
  }
 
@@ -144,6 +150,10 @@ getPlayer(p) {
    firebase.database().ref('players/').set({
        players: this.state.players
    });
+ }
+
+ resultSubmitted() {
+   this.setState({resultShown: true})
  }
 
  postToSlack(winner, loser){
@@ -171,7 +181,7 @@ postMatch(playerOne, playerTwo) {
       score: playerTwo.score
     },
     day: formattedDate.day,
-    month: 'November',
+    month: formattedDate.month,
     year: formattedDate.year
   }
   this.setState({matches: this.state.matches.concat([match])}, function() {
@@ -179,10 +189,10 @@ postMatch(playerOne, playerTwo) {
       matches: this.state.matches
     });
   });
-  this.moreData(match.month, playerOne, playerTwo)
+  this.byMonthData(match.month, playerOne, playerTwo)
 }
 
-moreData(month, playerOne, playerTwo){
+byMonthData(month, playerOne, playerTwo){
   const postData = {
     month: month,
     p1: {
@@ -195,7 +205,6 @@ moreData(month, playerOne, playerTwo){
     },
   };
   const updates = {};
-  this.getLatestId();
   const newPostKey = firebase.database().ref().child('matches' + '/bymonth' + '/' + month).push().key;
   updates['matches' + '/bymonth' + '/' + month + '/' + 'matches/' + this.getLatestId()] = postData;
   return firebase.database().ref().update(updates);
@@ -225,16 +234,16 @@ clearInput() {
 }
 
 formatDate(date) {
-  var monthNames = [
+  const monthNames = [
     "January", "February", "March",
     "April", "May", "June", "July",
     "August", "September", "October",
     "November", "December"
   ];
 
-  var day = date.getDate();
-  var monthIndex = date.getMonth();
-  var year = date.getFullYear();
+  const day = date.getDate();
+  const monthIndex = date.getMonth();
+  const year = date.getFullYear();
 
   return {
     day: day,
@@ -243,57 +252,44 @@ formatDate(date) {
   }
 }
 
+showComponent(componentName) {
+  this.setState({display: componentName});
+}
+
 
  render() {
+   if (this.state.loading){
+     return <div>Loading...</div>
+   }
    const { players, matches, months } = this.state;
+   const components = {
+    "AddPlayer": <AddPlayer
+                    addPlayer={this.addPlayer.bind(this)}
+                 />,
+    "ShowPlayers": <Players
+                    players={players}
+                    submit={this.submit.bind(this)}
+                  />,
+    "Table": <Table
+            players={players}
+            />,
+    "Matches": <Matches
+                months={months}
+               />
+    };
     return (
         <div className="container">
           <div className="heading">
             <h1> Table Tennis Rankings Leaderboard </h1>
           </div>
-          <div className="addPlayer">
-            <input ref="addPlayer" placeholder="add new player" />
-            <button onClick={() => this.addPlayer(this.refs.addPlayer.value)}>Add</button>
+          <div className="navigation">
+            <button className="navBtn target" onClick={() => this.showComponent('AddPlayer')}>Add</button>
+            <button className="navBtn target" onClick={() => this.showComponent('ShowPlayers')}>New Match</button>
+            <button className="navBtn target" onClick={() => this.showComponent('Table')}>Table</button>
+            <button className="navBtn target" onClick={() => this.showComponent('Matches')}>Previous Matches</button>
           </div>
-          <div className="players">
-            <input type="text" ref="p1Name" placeholder="slack name without the @" className="player" />
-            <input ref="p1Score" placeholder="score" type="number" className="score"/>
-          </div>
-          <div className="players">
-            <input type="text" ref="p2Name" placeholder="slack name without the @" className="player" />
-            <input ref="p2Score" placeholder="score" type="number" className="score"/>
-          </div>
-
-          <div className="submitData">
-            <button onClick={() => this.submit(
-              {
-                name: this.refs.p1Name.value,
-                score: this.refs.p1Score.value
-              },
-              {
-                name: this.refs.p2Name.value,
-                score: this.refs.p2Score.value
-              }
-              )}>submit result
-            </button>
-          </div>
-
-          <div className="matchesContainer">
-          {this.state.showTable ?
-            <div className="table">
-            <button className="toggleButton" onClick={() => this.toggle()}>Show Matches</button>
-              <Table
-                players={players}
-              />
-            </div>
-            :
-            <div className="matchesContainer">
-            <button className="toggleButton" onClick={() => this.toggle()}>Show Table</button>
-              <Matches
-                months={months}
-              />
-            </div>
-          }
+          <div className="component-container">
+            {components[this.state.display]}
           </div>
       </div>
     );

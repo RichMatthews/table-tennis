@@ -1,44 +1,32 @@
-.matches div{
-  display:flex;
+.matchesContainer  {
+  margin:5px;
+  padding:10px;
   text-align:center;
-  font-size: 15px;
-}
-
-.matches div .playerName {
-  width: 50%;
-  padding: 5px;
-}
-
-.matches div .playerScore {
-  width: 8%;
-  padding: 2px;
-}
-
-.matches span:first-child {
-  text-align: right;
-  padding: 5px;
-}
-
-.matches span:last-child {
-  text-align: left;
-  padding: 5px;
-}
-
-.playerScore {
-  background-color: orange;
-  margin-left: 3px;
-  margin-right: 3px;
-}
-
-.allMatches {
-  display: flex;
-  flex-direction: column;
+  font-size: 20px;
+  border-bottom:1px solid #eee;
 }
 
 .match {
-  border-bottom: 1px solid black;
+  width: 500px;
+  display:flex;
+  text-align:center;
   overflow: hidden;
-  margin-bottom: -1px;
+}
+
+span.playerName {
+  width:40%;
+}
+
+span.playerScore {
+  width:20%;
+}
+
+.match div span:first-child {
+  text-align: right;
+}
+
+.match div span:last-child {
+  text-align: left;
 }
 
 #toggle:checked ~ .expand {
@@ -46,7 +34,7 @@
 }
 
 #toggle:checked ~ label::before {
-  content: "-";
+  content: "hide";
 }
 
 #toggle {
@@ -54,17 +42,12 @@
   content: '';
 }
 
-#toggle::before {
-  content: '+'
+#toggle ~ label::before {
+  content: 'show'
 }
 
 .expand {
   height: 0px;
   transition: height 0.5s;
   color: black;
-}
-
-.matchesContainer {
-  margin: auto;
-  width: 500px;
 }

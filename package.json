@@ -1,4 +1,4 @@
-{
+  {
   "name": "css",
   "version": "1.0.0",
   "description": "",
@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack",
     "start": "node src/server/index.js",
+    "start:production": "NODE_ENV=production ./node_modules/.bin/webpack && node src/server/index.js",
+    "start:dev": "NODE_ENV=development ./node_modules/.bin/webpack && node src/server/index.js",
     "watch": "webpack --watch"
   },
   "author": "",
@@ -29,6 +31,8 @@
     "react-dom": "^15.6.1",
     "react-dragula": "^1.1.17",
     "sass-loader": "^6.0.6",
+    "semantic-ui-css": "^2.2.12",
+    "semantic-ui-react": "^0.74.2",
     "style-loader": "^0.18.2",
     "webpack": "^3.5.6"
   }
