@@ -1,6 +1,6 @@
 import React from 'react';
 import update from 'immutability-helper';
-import { Dropdown } from 'semantic-ui-react';
+import { Dropdown, Input } from 'semantic-ui-react';
 
 class Player extends React.Component {
   constructor(props) {
@@ -54,11 +54,11 @@ class Player extends React.Component {
       <div className="playersContainer">
         <div className="players">
           <Dropdown onChange={this.selectPlayerOne} placeholder='Select Player One' fluid selection options={players} />
-          <input onChange={this.handlePlayerOneScore} ref="p1Score" placeholder="score" type="number" className="score"/>
+          <Input onChange={this.handlePlayerOneScore} placeholder="score" type="number"/>
         </div>
         <div className="players">
           <Dropdown onChange={this.selectPlayerTwo} placeholder='Select Player Two' fluid selection options={players} />
-          <input onChange={this.handlePlayerTwoScore} ref="p2Score" placeholder="score" type="number" className="score"/>
+          <Input onChange={this.handlePlayerTwoScore} placeholder="score" type="number"/>
         </div>
         <div className="submitData">
           <button className="submitBtn" onClick={() => this.props.submit(this.state.playerOne, this.state.playerTwo)}>submit result</button>

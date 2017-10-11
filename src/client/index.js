@@ -256,7 +256,6 @@ showComponent(componentName) {
   this.setState({display: componentName});
 }
 
-
  render() {
    if (this.state.loading){
      return <div>Loading...</div>

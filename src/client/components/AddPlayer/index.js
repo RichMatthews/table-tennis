@@ -17,7 +17,7 @@ class AddPlayer extends React.Component {
     return (
       <div className="addPlayer">
         <input className="addPlayerInpt" onChange={this.handlePlayerName} placeholder="Slack name without the @" />
-        <button className="addBtn" onClick={() => this.props.addPlayer(this.state.playerName)}>Add Player</button>
+        <p><button className="addBtn" onClick={() => this.props.addPlayer(this.state.playerName)}>Add Player</button></p>
       </div>
     )
   }
