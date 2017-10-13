@@ -181,7 +181,7 @@ postMatch(playerOne, playerTwo) {
       score: playerTwo.score
     },
     day: formattedDate.day,
-    month: formattedDate.month,
+    month: 'october',
     year: formattedDate.year
   }
   this.setState({matches: this.state.matches.concat([match])}, function() {

@@ -5,6 +5,8 @@ import './index.scss';
 class Matches extends React.Component {
 
     render() {
+      console.log(this.props.months, 'monthys');
+      debugger;
       return (
         <div className="matchesContainer">
           {this.props.months.map((month, monthIndex) => {
