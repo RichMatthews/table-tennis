@@ -67965,9 +67965,7 @@ var prodConfig = {
   messagingSenderId: "60558642448"
 };
 
-console.log("development", 'node env');
 var firebaseInit = exports.firebaseInit = firebase.initializeApp( true ? devConfig : prodConfig);
-console.log(firebaseInit.options_.apiKey, 'api key');
 var rootRef = exports.rootRef = firebase.database().ref();
 
 /***/ }),
