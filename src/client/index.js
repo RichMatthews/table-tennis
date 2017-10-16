@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import firebase from 'firebase';
@@ -71,21 +72,28 @@ class App extends React.Component {
 
 addPlayer = (name) => {
   const players = this.state.players;
-  players.sort(function(a, b) {
-    return (a.rank) - (b.rank);
-  })
-  const lastPosition = players.slice(-1)[0];
-  const latestRank = lastPosition.rank +1;
-  const newPerson = {
-    name: name,
-    rank: latestRank,
-    played: 0,
-    wins: 0,
-    losses: 0
+  let foundPlayer = players.filter( player => player['name'] === name )
+  console.log(foundPlayer.length, 'fpl');
+  if (foundPlayer.length === 0){
+    players.sort(function(a, b) {
+      return (a.rank) - (b.rank);
+    })
+    const lastPosition = players.slice(-1)[0];
+    const latestRank = lastPosition.rank +1;
+    const newPerson = {
+      name: name,
+      rank: latestRank,
+      played: 0,
+      wins: 0,
+      losses: 0
+    }
+    this.setState({players: this.state.players.concat([newPerson])}, function(){
+      this.writeUserData()
+    });
   }
-  this.setState({players: this.state.players.concat([newPerson])}, function(){
-    this.writeUserData()
-  });
+  else {
+    alert('player already exists')
+  }
 }
 
 workOutWinner(playerOne, playerTwo) {
