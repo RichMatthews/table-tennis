@@ -274,6 +274,7 @@ showComponent(componentName) {
             />,
     "Matches": <Matches
                 months={months}
+                matches={matches}
                />
     };
     return (

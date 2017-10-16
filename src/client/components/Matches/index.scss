@@ -28,26 +28,3 @@ span.playerScore {
 .match div span:last-child {
   text-align: left;
 }
-
-#toggle:checked ~ .expand {
-  height: 50px;
-}
-
-#toggle:checked ~ label::before {
-  content: "hide";
-}
-
-#toggle {
-  display: none;
-  content: '';
-}
-
-#toggle ~ label::before {
-  content: 'show'
-}
-
-.expand {
-  height: 0px;
-  transition: height 0.5s;
-  color: black;
-}
