@@ -4,19 +4,23 @@ import './index.scss';
 
 class Matches extends React.Component {
     render() {
-      console.log(this.props.matches, 'm');
+      const { matches } = this.props;
       return (
         <div className="matchesContainer">
-        {this.props.matches.map((match, matchIndex) => {
-        return(
+        {matches.length > 0 ?
+          matches.map((match, matchIndex) => {
+            return(
 
-          <div key={`$${matchIndex}`} className="expand match">
-            <span className="playerName"> {match.playerOne.name} </span>
-            <span className="playerScore"> {match.playerOne.score} - {match.playerTwo.score}</span>
-            <span className="playerName"> {match.playerTwo.name} </span>
-          </div>
-        );
-        })}
+              <div key={`$${matchIndex}`} className="expand match">
+              <span className="playerName"> {match.playerOne.name} </span>
+              <span className="playerScore"> {match.playerOne.score} - {match.playerTwo.score}</span>
+              <span className="playerName"> {match.playerTwo.name} </span>
+              </div>
+            );
+          })
+          :
+          <div>no data</div>
+        }
         </div>
       )
     }
