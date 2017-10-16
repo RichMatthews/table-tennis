@@ -1,1 +1,1 @@
-web: NODE_ENV=production node ./src/server/index.js
+web: npm run start:production
