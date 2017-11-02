@@ -1,6 +1,7 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { createStore } from 'redux';
+import { Provider } from 'react-redux'
 import firebase from 'firebase';
 import './firebase/config.js';
 import Slack from 'browser-node-slack';
@@ -9,6 +10,8 @@ import AddPlayer from './components/AddPlayer';
 import Players from './components/Players';
 import Table from './components/Table';
 import Matches from './components/Matches';
+import reducer from './reducers/reducer';
+let store = createStore(reducer);
 
 
 import './index.scss';
@@ -27,6 +30,7 @@ class App extends React.Component {
  }
 
  componentDidMount = () => {
+
    this.pullFromDB('players');
    this.pullFromDB('matches');
    this.pullMonths()
@@ -36,6 +40,33 @@ class App extends React.Component {
    return new Promise((resolve, reject) => {
      firebase.database().ref(query).on('value', resolve);
    });
+ }
+
+ // pullFromDB = (routeName) => {
+ //    this.pullFromFirebase(`/${routeName}/${routeName}`).then((data) => {
+ //      try {
+ //        const pulledContent = Object.keys(data.val()).map(function(key) {
+ //          return data.val()[key];
+ //        })
+ //        this.setState({[routeName]: pulledContent});
+ //      }
+ //      catch(err){
+ //        console.error(`${err}, no data for ${routeName}`);
+ //      }
+ //   })
+ // }
+
+async pullFromDB (routeName) {
+   try {
+    const data = await this.pullFromFirebase(`/${routeName}/${routeName}`)
+    const pulledContent = Object.keys(data.val()).map(function(key) {
+      return data.val()[key];
+    })
+    this.setState({[routeName]: pulledContent});
+  }
+   catch(err){
+      console.error(`${err}, no data for ${routeName}`);
+   }
  }
 
  pullMonths = () => {
@@ -56,24 +87,10 @@ class App extends React.Component {
    }
  }
 
- pullFromDB = (routeName) => {
-   this.pullFromFirebase(`/${routeName}/${routeName}`).then((data) => {
-     try {
-       const pulledContent = Object.keys(data.val()).map(function(key) {
-         return data.val()[key];
-       })
-       this.setState({[routeName]: pulledContent});
-     }
-     catch(err){
-       console.error(`${err}, no data for ${routeName}`);
-     }
-  })
- }
 
 addPlayer = (name) => {
   const players = this.state.players;
   let foundPlayer = players.filter( player => player['name'] === name )
-  console.log(foundPlayer.length, 'fpl');
   if (foundPlayer.length === 0){
     players.sort(function(a, b) {
       return (a.rank) - (b.rank);
@@ -98,13 +115,13 @@ addPlayer = (name) => {
 
 workOutWinner(playerOne, playerTwo) {
   return playerOne.score > playerTwo.score ? {
-      winner: playerOne,
-      loser: playerTwo
-    } :
-    {
-      winner: playerTwo,
-      loser: playerOne
-    }
+    winner: playerOne,
+    loser: playerTwo
+  } :
+  {
+    winner: playerTwo,
+    loser: playerOne
+  }
 }
 
 incrementStats(winner, loser) {
@@ -115,11 +132,11 @@ incrementStats(winner, loser) {
 }
 
 getPlayer(p) {
-    const players = this.state.players;
-    const person = players.find(function(player){
-      return player.name == p.name;
-    });
-    return person;
+  const players = this.state.players;
+  const person = players.find(function(player){
+    return player.name == p.name;
+  });
+  return person;
  }
 
  changeRank(winner, loser) {
@@ -129,7 +146,6 @@ getPlayer(p) {
  }
 
  submit = (player1, player2) => {
-  //  this.clearInput();
    const players = this.state.players;
    const playerOne = this.getPlayer(player1);
    const playerTwo = this.getPlayer(player2);
@@ -140,6 +156,7 @@ getPlayer(p) {
      playerOne.score = player1.score;
      playerTwo.score = player2.score;
      const result = this.workOutWinner(playerOne, playerTwo);
+     debugger;
      this.postToSlack(result.winner, result.loser);
      this.postMatch(player1, player2);
      this.incrementStats(result.winner, result.loser);
@@ -165,6 +182,8 @@ getPlayer(p) {
  }
 
  postToSlack(winner, loser){
+   console.log(winner, 'w');
+   console.log(loser, 'l');
    const slackName = this.state.slackNameValue;
    const slack = new Slack('https://hooks.slack.com/services/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');
    slack.send({
@@ -286,6 +305,7 @@ showComponent(componentName) {
                />
     };
     return (
+      <Provider store={store}>
         <div className="container">
           <div className="heading">
             <h1> Table Tennis Rankings Leaderboard </h1>
@@ -300,6 +320,7 @@ showComponent(componentName) {
             {components[this.state.display]}
           </div>
       </div>
+     </Provider>
     );
   }
 }
